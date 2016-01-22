@@ -1,0 +1,1 @@
+Apart from making it clearer that the user needs to press both buttons to get all the metadata, perhaps centering the title image would be good, and also adding some code to detect variations in existing identifier keys (eg. my book had mobi_asin, which would be equivalent to our ASIN)

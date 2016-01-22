@@ -1,0 +1,7 @@
+The Calibre BookBrainz Plugin - BBID
+===========================
+
+Created by Stanisław Szcześniak
+
+Requires calibre >= 1.0.0 (but try to use the latest version possible, like >= 2.46.0)
+This project was established as a part of Google Code-In 2015.
