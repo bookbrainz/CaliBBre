@@ -1,5 +1,7 @@
 # CaliBBre
-## Integration of Calibre and BookBrainz (calibre plugin).   Allows to search for metadata in BookBrainz using BBID and upload them to the selected books.
+## Integration of Calibre and BookBrainz (calibre plugin).
+Allows to search for metadata in BookBrainz by BBID
+and then apply it to selected book.
 ### INSTALLATION :  
 Download zip file and add it to calibre like this (for v.1.0.1) :
 ```bash
