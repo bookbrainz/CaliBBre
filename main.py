@@ -1,19 +1,38 @@
-#!/usr/bin/env python2
+# -*- coding: utf8 -*-
+
+# Copyright (C) 2015, 2016  Stanisław Szcześniak
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
 from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
-import sys
 import json
 import urllib2
+DEBUG = False
 
 from PyQt5.Qt import *
-from calibre_plugins.CaliBBre.config import prefs
-
-__license__ = 'GPL v3'
-__copyright__ = '2015 Stanislaw Szczesniak'
-__docformat__ = 'restructuredtext en'
+# noinspection PyUnresolvedReferences
+from calibre_plugins.CaliBBre.config import names
 
 
+# noinspection PyTypeChecker,PyArgumentList,PyUnresolvedReferences
 class CaliBBreDialog(QDialog):
+    entity_attributes_order = \
+        ['title', 'authors', 'pubdate',
+            'publisher', 'languages', 'identifiers']
+
     def __init__(self, gui, icon, do_user_config):
         QDialog.__init__(self, gui)
         self.gui = gui
@@ -24,39 +43,44 @@ class CaliBBreDialog(QDialog):
         self.window_init(icon)
 
         # Adding BookBrainz logo to the plugin dialog
-        self.img = QLabel()
-        pixmap = QPixmap("images/BBt.svg")
-        self.img.setPixmap(pixmap)
-        self.l.addWidget(self.img)
+        img = QLabel()
+        pixmap = QPixmap("images/bookbrainz_name.svg")
+        img.setPixmap(pixmap)
+        self.layout.addWidget(img)
 
-        # Adding search space
+        # Adding search query editor
         self.search_space = QLineEdit()
-        self.search_space.setPlaceholderText(prefs['enterbbid'])
-        self.l.addWidget(self.search_space)
+        self.search_space.setPlaceholderText(names['BBID here'])
+        self.layout.addWidget(self.search_space)
 
         # Adding search execution button
-        self.searchExecutionButton = QPushButton(prefs['searchandfetch'], self)
-        self.searchExecutionButton.clicked.connect(self.search)
-        self.l.addWidget(self.searchExecutionButton)
+        self.searchExecutionButton = QPushButton(names['Search'], self)
+        self.searchExecutionButton.clicked.connect(self.make_search)
+        self.layout.addWidget(self.searchExecutionButton)
 
         # Download button
         self.downloadMetadataButton \
-            = QPushButton(prefs['dmetbb'])
-        self.downloadMetadataButton.clicked.connect(self.download_metadata)
-        self.l.addWidget(self.downloadMetadataButton)
+            = QPushButton(names['Download data from BB'])
+        self.downloadMetadataButton.clicked.connect(self.make_download_metadata)
+        self.layout.addWidget(self.downloadMetadataButton)
 
-        # Table initalization
+        # Table initialization
         self.table_init()
 
-        self.applyButton = QPushButton(prefs['apply_changes'], self)
+        self.applyButton = QPushButton(names['Apply changes'], self)
         self.applyButton.clicked.connect(self.apply_metadata)
-        self.l.addWidget(self.applyButton)
+        self.layout.addWidget(self.applyButton)
 
-        self.aboutButton = QPushButton(prefs['about'], self)
+        self.aboutButton = QPushButton(names['About'], self)
         self.aboutButton.clicked.connect(self.about)
-        self.l.addWidget(self.aboutButton)
+        self.layout.addWidget(self.aboutButton)
 
         self.search_space.setFocus()
+
+        if DEBUG:
+            self.search_space.setText('b1e5b01d-c434-40fd-8ab7-f264da6c0989')
+            self.searchExecutionButton.click()
+            self.downloadMetadataButton.click()
 
     # Basic window configurations
     def window_init(self, icon):
@@ -64,217 +88,314 @@ class CaliBBreDialog(QDialog):
         self.resize(600, 500)
 
         # Setting Dialog layout
-        self.l = QVBoxLayout()
-        self.setLayout(self.l)
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
 
         # Setting window title and icon
-        self.setWindowTitle(prefs['window_title'])
+        self.setWindowTitle(names['Window title'])
         self.setWindowIcon(icon)
 
     # Results table initialization
     def table_init(self):
         self.table = QTableWidget(6, 2)
-        self.table.setHorizontalHeaderLabels([prefs["Current Metadata"], prefs["Metadata from BookBrainz"]])
-        self.table.setVerticalHeaderLabels(
-            [prefs['Title'],
-             prefs['Author'],
-             prefs['Date published'],
-             prefs['Publisher name'],
-             prefs['Languages'],
-             prefs['Identifiers']])
+
+        self.table.setHorizontalHeaderLabels([
+            names["Current Metadata"],
+            names["Metadata from BookBrainz"]
+        ])
+
+        self.table.setVerticalHeaderLabels([
+            names['Title'],
+            names['Author'],
+            names['Date published'],
+            names['Publisher name'],
+            names['Languages'],
+            names['Identifiers']
+        ])
+
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
         self.table.verticalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.l.addWidget(self.table)
 
-    def download_metadata(self):
-        self.downloadMetadataButton.setText(prefs['Downloading metadata...'])
-        self.downloadMetadataButton.repaint()
-        self.downloadMetadataButton.setFocus()
-        self.book_id = 0
-        rows = self.gui.current_view().selectionModel().selectedRows()
-        if len(rows) == 0:
-            return
-        self.book_id = self.gui.library_view.model().id(rows[0])
+        self.layout.addWidget(self.table)
 
-        # title
+    def make_search(self):
         try:
-            title = self.actjs['default_alias']['name']
-            self.table.setItem(0, 1, new_qitem(title))
-            self.table.repaint()
+            self.search()
+            self.downloadMetadataButton.setFocus()
+            self.searchExecutionButton.setText(names['Search'])
         except:
-            pass
+            dialog = QErrorMessage()
+            dialog.setWindowTitle(names['Book not found'])
+            dialog.showMessage(
+                names['{} was not found in BookBrainz'].format(
+                    self.search_space.text()
+                )
+            )
+            dialog.exec_()
+            self.clear_to_pre_search_state()
 
-        # Author
-        try:
-            rurl = self.actjs['relationships_uri']
-            js = request_get(rurl)
-            found = False
-            author = ""
-            for o in js['objects']:
-                for e in o['entities']:
-                    if e['entity']['_type'] == 'Creator':
-                        auri = e['entity']['uri']
-                        js2 = request_get(auri)
-                        author = js2['default_alias']['name']
-                        found = True
-                        break
-                if found:
-                    break
-            self.table.setItem(1, 1, new_qitem(author))
-            self.table.repaint()
-        except:
-            pass
-
-        # date_published
-        try:
-            date_published = self.actjs['release_date']
-            self.table.setItem(2, 1, new_qitem(date_published))
-            self.table.repaint()
-        except:
-            pass
-
-        # publisher_name
-        try:
-            purl = self.actjs['publisher_uri']
-            publisher_name = ""
-            if purl is not None:
-                prj = request_get(purl)
-                publisher_name = prj['default_alias']['name']
-            self.table.setItem(3, 1, new_qitem(publisher_name))
-            self.table.repaint()
-        except:
-            pass
-
-        # language_name - works fine with translations of names of languages(tested)
-        try:
-            language_name = self.actjs['language']['name']
-            self.table.setItem(4, 1, new_qitem(language_name))
-            self.table.repaint()
-        except:
-            pass
-
-        # identifiers
-        try:
-            identifiers = ""
-            iuri = self.actjs['identifiers_uri']
-            irj = request_get(iuri)
-            for o in irj['objects']:
-                id_type = o['identifier_type']['label']
-                id_value = o['value']
-                identifiers += id_type + "::" + id_value + ","
-            identifiers = identifiers[:-1]
-            # might ask about adding or succession
-            self.table.setItem(5, 1, new_qitem(identifiers))
-            self.table.repaint()
-        except:
-            pass
-
-        self.search_space.setText("")
-        rows[0].row()
-
-        self.downloadMetadataButton.setText(prefs['dmetbb'])
-        self.downloadMetadataButton.repaint()
-        self.applyButton.setFocus()
-
-    # Apply downloaded metadata to the selected book
-    def apply_metadata(self):
-        categories = ['title', 'authors', 'pubdate', 'publisher', 'languages', 'identifiers']
-        for key in categories:
-            try:
-                if key not in ["", None]:
-                    self.db.new_api.set_field(key, {self.book_id: self.table.item(categories.index(key), 1).text()})
-            except:
-                pass
-
-        self.gui.iactions['Edit Metadata'].refresh_books_after_metadata_edit({self.book_id})
-        self.search_space.setFocus()
-
-    # Search for book in BBID and
     def search(self):
-        self.searchExecutionButton.setText(prefs['Searching ...'])
+        self.searchExecutionButton.setText(names['Searching ...'])
         self.searchExecutionButton.setFocus()
         self.downloadMetadataButton.repaint()
-        text = self.search_space.text()
-        self.last_text = text
-        print(text)
-        # self.table.clear()
+
+        query_id = self.search_space.text()
+
         self.clear_table()
         self.table.setFocus()
-        num_queries = 0
-        js = {}
-        try:
-            for entity_type in ['edition', 'publication', 'work']:
-                rurl = "https://bookbrainz.org/ws/" + entity_type + "/" + text + "/"
-                # print(rurl)
-                js = request_get(rurl)
-                self.actjs = js
-                if '_type' not in js:
-                    continue
-                num_queries = 1
-                break
-            if num_queries == 0:
-                return
-        except:
-            self.searchExecutionButton.setText(prefs['searchandfetch'])
-            self.clear_table()
-            self.searchExecutionButton.setFocus()
-            return
-        rows = self.gui.current_view().selectionModel().selectedRows()
-        if len(rows) == 0:
-            self.search_space.setText("")
-        else:
-            mi = self.gui.library_view.model().db.get_metadata(rows[0].row())
-            self.table.setItem(0, 0, new_qitem(mi.title))
-            self.table.setItem(1, 0, new_qitem(mi.authors))
-            self.table.setItem(2, 0, new_qitem(mi.pubdate))
-            self.table.setItem(3, 0, new_qitem(mi.publisher))
-            self.table.setItem(4, 0, new_qitem(mi.languages))
-            self.table.setItem(5, 0, new_qitem(mi.identifiers))
-        self.table.setItem(0, 1, new_qitem(js['default_alias']['name']))
+
+        json_short_data = request_get(
+            "https://bookbrainz.org/ws/entity/{bbid}/".format(
+                bbid=query_id
+            )
+        )
+
+        json_data = request_get(
+            json_short_data.get('uri', '')
+        )
+
+        self.show_metadata_from_selected()
+
+        self.table.setItem(0, 1, table_item(json_data['default_alias']['name']))
         self.table.repaint()
 
-        self.queryResult = js
-        self.searchExecutionButton.setText(prefs['searchandfetch'])
+        self.entity_query_data = json_data
+
+    def show_metadata_from_selected(self):
+        rows = self.gui.current_view().selectionModel().selectedRows()
+        if rows:
+            selected =\
+                self.gui.library_view.model().db.get_metadata(rows[0].row())
+            self.table.setItem(0, 0, table_item(selected.title))
+            self.table.setItem(1, 0, table_item(selected.authors))
+            self.table.setItem(2, 0, table_item(selected.pubdate))
+            self.table.setItem(3, 0, table_item(selected.publisher))
+            self.table.setItem(4, 0, table_item(selected.languages))
+            self.table.setItem(5, 0, table_item(selected.identifiers))
+
+    def clear_to_pre_search_state(self):
+        self.searchExecutionButton.setText(names['Search'])
+        self.searchExecutionButton.setFocus()
         self.searchExecutionButton.repaint()
+        self.clear_table()
+
+    def make_download_metadata(self):
+        self.downloadMetadataButton.setText(names['Downloading metadata...'])
+        self.downloadMetadataButton.repaint()
         self.downloadMetadataButton.setFocus()
+        try:
+            self.download_metadata()
+            self.downloadMetadataButton.setText(names['Download data from BB'])
+            self.downloadMetadataButton.repaint()
+            self.search_space.setText("")
+            self.applyButton.setFocus()
+        except:
+            dialog = QErrorMessage()
+            dialog.setWindowTitle(names['Failed'])
+            dialog.showMessage(
+                names['Downloading metadata from BookBrainz failed'].format(
+                    self.search_space.text()
+                )
+            )
+            dialog.exec_()
+            self.searchExecutionButton.setFocus()
+            self.clear_table()
+            self.search_space.clear()
+
+    def download_metadata(self):
+        self.fetch_title_from_bb()
+        self.fetch_author_from_bb()
+        self.fetch_release_date_from_bb()
+        self.fetch_publisher_from_bb()
+        self.fetch_language_from_bb()
+        self.fetch_identifiers_from_bb()
+
+    def fetch_title_from_bb(self):
+        title = self.entity_query_data.get('default_alias', {}).get('name', '')
+        self.table.setItem(0, 1, table_item(title))
+        self.table.repaint()
+
+    def fetch_author_from_bb(self):
+        relationships_uri = self.entity_query_data.get('relationships_uri', '')
+        if not relationships_uri:
+            return
+        json_data = \
+            request_get_yolo(relationships_uri)
+        author = self.get_author_name_from_relationships(json_data)
+        self.table.setItem(1, 1, table_item(author))
+        self.table.repaint()
+
+    def get_author_name_from_relationships(self, json_data):
+        author_uri = self.get_author_uri_from_relationships(json_data)
+        if author_uri:
+            author_json = request_get_yolo(author_uri)
+            return author_json.get('default_alias', {}).get('name', None)
+        else:
+            return ''
+
+    def get_author_uri_from_relationships(self, json_data):
+        for relationship in json_data.get('objects', []):
+            if relationship\
+                    .get('relationship_type', {})\
+                    .get('label', '') == 'Authored':
+                for entity in relationship.get('entities', []):
+                    if entity.get('position', 2) == 0:
+                        author_uri = \
+                            entity.get('entity', {}).get('uri', None)
+                        if author_uri:
+                            return author_uri
+        return None
+
+    def fetch_release_date_from_bb(self):
+        release_date = self.entity_query_data.get('release_date', '')
+        self.table.setItem(2, 1, table_item(release_date))
+        self.table.repaint()
+
+    def fetch_publisher_from_bb(self):
+        publisher_uri = self.entity_query_data.get('publisher_uri', '')
+        publisher_data = request_get_yolo(publisher_uri)
+        publisher_name = \
+            publisher_data.get('default_alias', {}).get('name', '')
+
+        self.table.setItem(3, 1, table_item(publisher_name))
+        self.table.repaint()
+
+    def fetch_language_from_bb(self):
+        language_name = \
+            self.entity_query_data.get('language', {}).get('name', '')
+        self.table.setItem(4, 1, table_item(language_name))
+        self.table.repaint()
+
+    def fetch_identifiers_from_bb(self):
+        identifiers_uri = self.entity_query_data.get('identifiers_uri', '')
+        identifiers_data = request_get_yolo(identifiers_uri)
+        identifiers = []
+
+        for identifier in identifiers_data.get('objects', []):
+            identifier_type_label = \
+                identifier.get('identifier_type', {}).get('label', '')
+            identifier_value = identifier.get('value', '')
+
+            identifiers.append(
+                "{label}: {value}".format(
+                    label=identifier_type_label,
+                    value=identifier_value
+                )
+            )
+
+        self.table.setItem(5, 1, table_item(identifiers))
+        self.table.repaint()
+
+    def apply_metadata(self):
+        """ Apply fetched metadata to the selected book
+        :return: None
+        """
+        book_id = self.get_selected_book_id()
+
+        for attr in self.entity_attributes_order:
+            value = self.get_attribute_value_from_column(attr, 1)
+
+            self.db.new_api.set_field(
+                attr,
+                {book_id: value}
+            )
+
+        self.gui.iactions['Edit Metadata']\
+            .refresh_books_after_metadata_edit({book_id})
+        self.search_space.setFocus()
+        self.search_space.clear()
+        self.searchExecutionButton.setFocus()
+        self.clear_table()
+
+        dialog = QMessageBox()
+        dialog.setWindowTitle(names['Successfully applied'])
+        dialog.setIconPixmap(QPixmap('images/done_icon.png'))
+        dialog.setText(
+            names['Metadata was successfully applied to selected book.']
+        )
+        dialog.exec_()
+        self.clear_to_pre_search_state()
+
+    def get_attribute_value_from_column(self, attribute, column):
+        attributes = ['title', 'authors', 'pubdate',
+                      'publisher', 'languages', 'identifiers']
+        return self.table.item(attributes.index(attribute), column).text()
+
+    def get_selected_book_id(self):
+        rows = self.gui.current_view().selectionModel().selectedRows()
+        if not rows:
+            return None
+        else:
+            return self.gui.library_view.model().id(rows[0])
 
     def config(self):
         self.do_user_config(parent=self)
         # Apply the changes
-        self.label.setText(prefs['hello_world_msg'])
+        self.label.setText(names['hello_world_msg'])
 
     def clear_table(self):
         for i in range(6):
             for j in range(2):
-                self.table.setItem(i, j, new_qitem(""))
+                self.table.setItem(i, j, table_item(""))
         self.table.repaint()
 
-    # noinspection PyCallByClass,PyTypeChecker
     def about(self):
         text = get_resources('about.txt')
-        QMessageBox.about(self, 'About the CaliBBre',
-                          text.decode('utf-8'))
+        QMessageBox.about(
+                self, 'About CaliBBre', text.decode('utf-8')
+        )
 
 
-# Return json data obtained by using provided url
 def request_get(url):
+    """Returns json data obtained from the provided url
+
+    :param url: Url to get the data from
+    :return(dict): JSON formatted data
+    """
     response = urllib2.urlopen(url)
+    assert(response.getcode() == 200)
     data = json.load(response)
     return data
 
 
-# Creates QTableWidgetItem with the provided text
-def new_qitem(text):
-    if type(text) == list:
-        ctext = ""
-        for x in text:
-            ctext += str(x) + ','
-        text = ctext[:-1]
-    else:
-        text = str(text)
+def request_get_yolo(url):
+    """Version of request_get that catches all exceptions
+    so it can be used anywhere without any try ... except's
 
+    :param url: Url to get the data from
+    :return: JSON formatted data
+    """
+    if not url:
+        return {}
+
+    try:
+        data = request_get(url)
+    except:
+        return {}
+
+    return data
+
+
+def table_item(value):
+    """ Creates QTableWidgetItem with the provided value
+
+    :param value: value to fill the table_item with
+    :return:
+    """
+    if type(value) == list:
+        text = ''
+        for i, list_value in enumerate(value):
+            text = text + list_value
+            if i < len(value):
+                text = text + ', '
+    else:
+        text = str(value)
     item = QTableWidgetItem()
     item.setText(text)
+
     return item
+
+

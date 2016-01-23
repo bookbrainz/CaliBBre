@@ -13,7 +13,8 @@ __docformat__ = 'restructuredtext en'
 
 class CalibreBookBrainzInit(InterfaceActionBase):
     name = 'CaliBBre'
-    description = 'Plugin for Calibre that allows you to query BookBrainz database using BBID'
+    description = 'Plugin for Calibre that allows you ' \
+        'to query BookBrainz database using BBID'
     supported_platforms = ['windows', 'osx', 'linux']
     author = 'Stanislaw Szczesniak'
     version = (0, 0, 1)

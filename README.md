@@ -9,6 +9,6 @@ Alternatively you can use calibre GUI (Preferences -> Plugins) and use my compre
 But after installing it that way you should restart calibre before using it.
 
 ### Screenshot:
-![alt_tag](images/zrz.png)
+![alt_tag](images/screenshot.png)
 
 This project was established as a part of GCI 2015.
