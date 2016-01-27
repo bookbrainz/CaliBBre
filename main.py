@@ -20,12 +20,12 @@ from __future__ import (unicode_literals, division, absolute_import,
                         print_function)
 import json
 import urllib2
-DEBUG = False
 
 from PyQt5.Qt import *
 from PyQt5.QtCore import *
 # noinspection PyUnresolvedReferences
 from calibre_plugins.CaliBBre.config import names
+DEBUG = False
 
 
 # noinspection PyTypeChecker,PyArgumentList,PyUnresolvedReferences
