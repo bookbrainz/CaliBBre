@@ -23,6 +23,7 @@ import urllib2
 DEBUG = False
 
 from PyQt5.Qt import *
+from PyQt5.QtCore import *
 # noinspection PyUnresolvedReferences
 from calibre_plugins.CaliBBre.config import names
 
@@ -77,6 +78,8 @@ class CaliBBreDialog(QDialog):
 
         self.search_space.setFocus()
 
+        self.set_auto_table_update()
+
         if DEBUG:
             self.search_space.setText('b1e5b01d-c434-40fd-8ab7-f264da6c0989')
             self.searchExecutionButton.click()
@@ -121,6 +124,12 @@ class CaliBBreDialog(QDialog):
 
         self.layout.addWidget(self.table)
 
+    def set_auto_table_update(self):
+        self.last_selected = None
+        qtimer = QTimer(self)
+        qtimer.timeout.connect(self.handle_select_changed)
+        qtimer.start(100)
+
     def make_search(self):
         try:
             self.search()
@@ -157,24 +166,36 @@ class CaliBBreDialog(QDialog):
             json_short_data.get('uri', '')
         )
 
-        self.show_metadata_from_selected()
-
         self.table.setItem(0, 1, table_item(json_data['default_alias']['name']))
         self.table.repaint()
 
         self.entity_query_data = json_data
 
-    def show_metadata_from_selected(self):
+    def handle_select_changed(self):
         rows = self.gui.current_view().selectionModel().selectedRows()
+
         if rows:
-            selected =\
-                self.gui.library_view.model().db.get_metadata(rows[0].row())
-            self.table.setItem(0, 0, table_item(selected.title))
-            self.table.setItem(1, 0, table_item(selected.authors))
-            self.table.setItem(2, 0, table_item(selected.pubdate))
-            self.table.setItem(3, 0, table_item(selected.publisher))
-            self.table.setItem(4, 0, table_item(selected.languages))
-            self.table.setItem(5, 0, table_item(selected.identifiers))
+            selected_index = rows[0].row()
+        else:
+            selected_index = None
+
+        if selected_index != self.last_selected:
+            self.last_selected = selected_index
+            self.update_metadata_from_book(selected_index)
+
+    def update_metadata_from_book(self, book_index):
+        if book_index is not None:
+            book =\
+                self.gui.library_view.model().db.get_metadata(book_index)
+        else:
+            book = EmptyBook()
+
+        self.table.setItem(0, 0, table_item(book.title))
+        self.table.setItem(1, 0, table_item(book.authors))
+        self.table.setItem(2, 0, table_item(book.pubdate))
+        self.table.setItem(3, 0, table_item(book.publisher))
+        self.table.setItem(4, 0, table_item(book.languages))
+        self.table.setItem(5, 0, table_item(book.identifiers))
 
     def clear_to_pre_search_state(self):
         self.searchExecutionButton.setText(names['Search'])
@@ -399,3 +420,10 @@ def table_item(value):
     return item
 
 
+class EmptyBook:
+    title = ''
+    authors = ''
+    pubdate = ''
+    publisher = ''
+    languages = ''
+    identifiers = ''
