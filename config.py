@@ -12,12 +12,12 @@ __docformat__ = 'restructuredtext en'
 names = JSONConfig('plugins/CaliBBre')
 
 # Set defaults
-names.defaults['BBID here'] = 'Enter your BBID here'
+names.defaults['Enter title or BookBrainz ID'] = 'Enter title or BookBrainz ID'
 names.defaults['Search'] = 'Search'
 names.defaults['Download data from BB'] = 'Download metadata from BookBrainz'
 names.defaults['Apply changes'] = 'Apply changes'
 names.defaults['About'] = 'About'
-names.defaults['Window title'] = 'CaliBBre - BBID search'
+names.defaults['Window title'] = 'CaliBBre - BBID search_for_bbid'
 names.defaults['Current Metadata'] = 'Old metadata'
 names.defaults["Metadata from BookBrainz"] = 'Metadata from BookBrainz'
 names.defaults['Author'] = 'Author'

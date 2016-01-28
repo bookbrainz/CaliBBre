@@ -23,6 +23,7 @@ import urllib2
 
 from PyQt5.Qt import *
 from PyQt5.QtCore import *
+import uuid
 # noinspection PyUnresolvedReferences
 from calibre_plugins.CaliBBre.config import names
 DEBUG = False
@@ -49,12 +50,12 @@ class CaliBBreDialog(QDialog):
         img.setPixmap(pixmap)
         self.layout.addWidget(img)
 
-        # Adding search query editor
+        # Adding search_for_bbid query editor
         self.search_space = QLineEdit()
-        self.search_space.setPlaceholderText(names['BBID here'])
+        self.search_space.setPlaceholderText(names['Enter title or BookBrainz ID'])
         self.layout.addWidget(self.search_space)
 
-        # Adding search execution button
+        # Adding search_for_bbid execution button
         self.searchExecutionButton = QPushButton(names['Search'], self)
         self.searchExecutionButton.clicked.connect(self.make_search)
         self.layout.addWidget(self.searchExecutionButton)
@@ -78,7 +79,7 @@ class CaliBBreDialog(QDialog):
 
         self.search_space.setFocus()
 
-        self.set_auto_table_update()
+        self.init_auto_table_update()
 
         if DEBUG:
             self.search_space.setText('b1e5b01d-c434-40fd-8ab7-f264da6c0989')
@@ -124,18 +125,37 @@ class CaliBBreDialog(QDialog):
 
         self.layout.addWidget(self.table)
 
-    def set_auto_table_update(self):
+    def init_auto_table_update(self):
         self.last_selected = None
         qtimer = QTimer(self)
         qtimer.timeout.connect(self.handle_select_changed)
         qtimer.start(100)
 
     def make_search(self):
-        try:
-            self.search()
+        self.clear_table([1])
+
+        search_value = self.search_space.text()
+        if True:
+            if not is_uuid(search_value):
+                query_bbid = self.search_for_book_title(search_value)
+                self.search_space.setText(
+                    self.search_space.text() +
+                    '|{}'.format(query_bbid)
+                )
+                #TODO delete it after bug is fixed
+                self.search_for_bbid(query_bbid)
+            else:
+                query_bbid = search_value
+                self.search_for_bbid(query_bbid)
+
+
+            self.table.setItem(0, 1,
+                table_item(self.entity_query_data['default_alias']['name']))
+            self.table.repaint()
+
             self.downloadMetadataButton.setFocus()
             self.searchExecutionButton.setText(names['Search'])
-        except:
+        else:
             dialog = QErrorMessage()
             dialog.setWindowTitle(names['Book not found'])
             dialog.showMessage(
@@ -146,28 +166,86 @@ class CaliBBreDialog(QDialog):
             dialog.exec_()
             self.clear_to_pre_search_state()
 
-    def search(self):
+    def search_for_book_title(self, title):
+        hits_dialog = QDialog(self)
+        hits_dialog.setWindowTitle('Select your book')
+        layout = QVBoxLayout()
+        hits_dialog.setLayout(layout)
+
+        hits_list = QListWidget()
+        hits = self.title_query(title)
+
+        if not hits:
+            raise ValueError
+
+        wait_loop = QEventLoop()
+        hits_list.itemDoubleClicked.connect(wait_loop.quit)
+
+        def close_handler(event):
+            wait_loop.quit()
+            event.accept()
+        hits_dialog.closeEvent = close_handler
+
+        layout.addWidget(hits_list)
+        hits_dialog.show()
+
+        for index, hit in enumerate(hits):
+            entity_type = hit['_source']['_type']
+            if not entity_type in ['Publication', 'Work', 'Edition']:
+                continue
+
+            item = QListWidgetItem(
+                    '{}. {}'.format(
+                            index+1,
+                            hit['_source']['default_alias']['name']
+                    ))
+
+            color = QColor()
+            if index%2:
+                color.setRed(240)
+                color.setGreen(255)
+                color.setBlue(255)
+            else:
+                color.setRed(220)
+                color.setGreen(255)
+                color.setBlue(240)
+            item.setBackground(QBrush(color))
+
+            hits_list.addItem(item)
+            hits_list.repaint()
+
+        wait_loop.exec_()
+        hits_dialog.close()
+
+        index = hits_list.selectedIndexes()[0].row()
+        self.entity_query_data = hits[index]['_source']
+        return hits[index]['_id']
+
+    def title_query(self, title):
+        url = \
+            "https://bookbrainz.org/ws/" \
+            "search/?q=\{}\"&mode=\"search\""\
+            .format(title)
+
+        response = request_get_yolo(url)
+        return response['hits']
+
+    def search_for_bbid(self, query_bbid):
         self.searchExecutionButton.setText(names['Searching ...'])
         self.searchExecutionButton.setFocus()
         self.downloadMetadataButton.repaint()
 
-        query_id = self.search_space.text()
-
-        self.clear_table()
         self.table.setFocus()
 
         json_short_data = request_get(
             "https://bookbrainz.org/ws/entity/{bbid}/".format(
-                bbid=query_id
+                bbid=query_bbid
             )
         )
 
         json_data = request_get(
             json_short_data.get('uri', '')
         )
-
-        self.table.setItem(0, 1, table_item(json_data['default_alias']['name']))
-        self.table.repaint()
 
         self.entity_query_data = json_data
 
@@ -196,12 +274,13 @@ class CaliBBreDialog(QDialog):
         self.table.setItem(3, 0, table_item(book.publisher))
         self.table.setItem(4, 0, table_item(book.languages))
         self.table.setItem(5, 0, table_item(book.identifiers))
+        self.table.repaint()
 
     def clear_to_pre_search_state(self):
         self.searchExecutionButton.setText(names['Search'])
         self.searchExecutionButton.setFocus()
         self.searchExecutionButton.repaint()
-        self.clear_table()
+        self.clear_table([1])
 
     def make_download_metadata(self):
         self.downloadMetadataButton.setText(names['Downloading metadata...'])
@@ -217,13 +296,11 @@ class CaliBBreDialog(QDialog):
             dialog = QErrorMessage()
             dialog.setWindowTitle(names['Failed'])
             dialog.showMessage(
-                names['Downloading metadata from BookBrainz failed'].format(
-                    self.search_space.text()
-                )
+                names['Downloading metadata from BookBrainz failed']
             )
             dialog.exec_()
             self.searchExecutionButton.setFocus()
-            self.clear_table()
+            self.clear_table([1])
             self.search_space.clear()
 
     def download_metadata(self):
@@ -329,7 +406,7 @@ class CaliBBreDialog(QDialog):
         self.search_space.setFocus()
         self.search_space.clear()
         self.searchExecutionButton.setFocus()
-        self.clear_table()
+        self.clear_table([1])
 
         dialog = QMessageBox()
         dialog.setWindowTitle(names['Successfully applied'])
@@ -339,6 +416,8 @@ class CaliBBreDialog(QDialog):
         )
         dialog.exec_()
         self.clear_to_pre_search_state()
+        self.last_selected = None
+        self.handle_select_changed()
 
     def get_attribute_value_from_column(self, attribute, column):
         attributes = ['title', 'authors', 'pubdate',
@@ -357,9 +436,9 @@ class CaliBBreDialog(QDialog):
         # Apply the changes
         self.label.setText(names['hello_world_msg'])
 
-    def clear_table(self):
+    def clear_table(self, columns_range=range(2)):
         for i in range(6):
-            for j in range(2):
+            for j in columns_range:
                 self.table.setItem(i, j, table_item(""))
         self.table.repaint()
 
@@ -427,3 +506,12 @@ class EmptyBook:
     publisher = ''
     languages = ''
     identifiers = ''
+
+
+def is_uuid(uuid_string):
+    try:
+        val = uuid.UUID(uuid_string, version=4)
+    except ValueError:
+        return False
+
+    return val.hex == uuid_string
