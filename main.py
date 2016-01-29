@@ -28,7 +28,6 @@ import uuid
 from calibre_plugins.CaliBBre.config import names
 DEBUG = False
 
-
 # noinspection PyTypeChecker,PyArgumentList,PyUnresolvedReferences
 class CaliBBreDialog(QDialog):
     entity_attributes_order = \
@@ -79,6 +78,7 @@ class CaliBBreDialog(QDialog):
 
         self.search_space.setFocus()
 
+        self.last_selected = None
         self.init_auto_table_update()
 
         if DEBUG:
@@ -135,15 +135,13 @@ class CaliBBreDialog(QDialog):
         self.clear_table([1])
 
         search_value = self.search_space.text()
-        if True:
+        try:
             if not is_uuid(search_value):
                 query_bbid = self.search_for_book_title(search_value)
                 self.search_space.setText(
                     self.search_space.text() +
                     '|{}'.format(query_bbid)
                 )
-                #TODO delete it after bug is fixed
-                self.search_for_bbid(query_bbid)
             else:
                 query_bbid = search_value
                 self.search_for_bbid(query_bbid)
@@ -155,7 +153,7 @@ class CaliBBreDialog(QDialog):
 
             self.downloadMetadataButton.setFocus()
             self.searchExecutionButton.setText(names['Search'])
-        else:
+        except:
             dialog = QErrorMessage()
             dialog.setWindowTitle(names['Book not found'])
             dialog.showMessage(
