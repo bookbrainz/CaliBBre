@@ -5,7 +5,7 @@ from __future__ import (unicode_literals, division, absolute_import,
 from PyQt5.Qt import QWidget, QHBoxLayout, QLabel, QLineEdit
 from calibre.utils.config import JSONConfig
 
-__license__ = 'GPL v3'
+__license__ = 'GPL v2+'
 __copyright__ = '2015 Stanislaw Szczesniak'
 __docformat__ = 'restructuredtext en'
 

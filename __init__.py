@@ -6,7 +6,7 @@ from __future__ import (unicode_literals, division, absolute_import,
 # PyUnresolvedReferences
 from calibre.customize import InterfaceActionBase
 
-__license__ = 'GPL v3'
+__license__ = 'GPL v2+'
 __copyright__ = '2015 Stanislaw Szczesniak'
 __docformat__ = 'restructuredtext en'
 
