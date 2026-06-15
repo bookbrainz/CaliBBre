@@ -1,8 +1,8 @@
 from calibre.customize import InterfaceActionBase
 
 class CalibbrePlugin(InterfaceActionBase):
-    name = "Calibbre Plugin"
-    description = "A plugin for Integration with bookbrainz "
+    name = "CaliBBre"
+    description = "A plugin for Integration with bookbrainz"
     supported_platforms = ["windows", "osx", "linux"]
     author = "Md Waqib Sk"
     version = (1, 0, 0)
