@@ -80,7 +80,6 @@ class Ui_Dialog(MetadataTabMixin, BrowseTabMixin, CollectionTabMixin):
         self.stackedWidget_entire_metadataTab.setCurrentIndex(0)
         self.stackedWidget_searchResults_metadataTab.setCurrentIndex(0)
         self.stackedWidget_metadataDetails_metadataTab.setCurrentIndex(1)
-        self.stackedWidget.setCurrentIndex(0)
 
         self._update_tab_widths()
         QtCore.QMetaObject.connectSlotsByName(Dialog)
