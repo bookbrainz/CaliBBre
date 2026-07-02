@@ -1,16 +1,36 @@
 # CaliBBre
-## Integration of Calibre and BookBrainz (calibre plugin).
-Allows to search for metadata in BookBrainz by BBID
-and then apply it to selected book.
-### INSTALLATION :  
-Download zip file and add it to calibre like this (for v.1.0.1) :
+A calibre plugin for Integration with the BookBrainz API
+## Features 
+### Metadata Tab 
+Update metadata for a selected Calibre book.<br>
+
+<img width="783" height="431" alt="harry_potter" src="https://github.com/user-attachments/assets/c1e73632-8a97-4317-b952-2f7640ba12e8" /> <br>
+
+The updated metadata of the book will contain:
+-  Name
+-  Authors
+-  Language
+-  Publisher
+-  Releasedate
+-  Disambiguation
+-  Sort Name
+-  Identifiers (isbn-10, isbn-13, bbid etc)
+-  Cover art from [Open Library](https://openlibrary.org/dev/docs/api/covers)
+
+
+## Installation
+
+### Option 1: From ZIP
+Download the zip file and install it like this (for v.1.0.0):
 ```bash
-calibre -a CaliBBre_v1.0.1.zip
+calibre-customize -a CaliBBre_v1.0.0.zip
 ```
-Alternatively you can use calibre GUI (Preferences -> Plugins) and use my compressed plugin (.zip).
-But after installing it that way you should restart calibre before using it.
+### Option 2: From source (clone repo)
+Clone the repository and build the plugin:
+```bash
+git clone https://github.com/bookbrainz/CaliBBre
+calibre-customize -b /path/to/CaliBBre
+```
 
-### Screenshot:
-![alt_tag](images/screenshot.png)
 
-This project was established as a part of GCI 2015.
+
