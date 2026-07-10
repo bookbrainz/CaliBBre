@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import requests
+from urllib.request import urlopen
 from qt.core import QThread, pyqtSignal
 
 from .api import BookBrainzAPI
@@ -81,9 +81,11 @@ class GetEditionDetailsByBBID(QThread):
             cover_bytes = None
             if isbn:
                 cover_url = f"https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg"
-                resp = requests.get(cover_url, timeout=10)
-                if resp.status_code == 200:
-                    cover_bytes = resp.content
+                try:
+                    resp = urlopen(cover_url, timeout=10)
+                    cover_bytes = resp.read()
+                except Exception:
+                    cover_bytes = None
             self.cover_fetched.emit(cover_bytes)
         except Exception:
             self.cover_fetched.emit(None)
