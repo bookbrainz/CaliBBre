@@ -27,6 +27,27 @@ class BookSearchWorker(QThread):
             self.finished.emit()
 
 
+class BookSearchByNameWorker(QThread):
+    """Background worker for text searches on the Browse tab"""
+
+    results_found = pyqtSignal(list)
+    error_occurred = pyqtSignal(str)
+    finished = pyqtSignal()
+
+    def __init__(self, search_query):
+        super().__init__()
+        self.search_query = search_query
+
+    def run(self):
+        try:
+            results = BookBrainzAPI.search_editions(self.search_query)
+            self.results_found.emit(results)
+        except Exception as e:
+            self.error_occurred.emit(str(e))
+        finally:
+            self.finished.emit()
+
+
 class GetEditionDetailsByBBID(QThread):
     """Fetches the full edition record, identifiers, and cover art for a specific BBID"""
 
