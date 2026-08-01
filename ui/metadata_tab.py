@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from calibre.ebooks.metadata.book.base import Metadata
-from qt.core import QMessageBox, Qt, QtCore, QtGui, QTimer, QtWidgets
+from qt.core import QDesktopServices, QMessageBox, Qt, QtCore, QtGui, QTimer, QtWidgets, QUrl
 
 from ..workers import (
     BookSearchWorker,
@@ -54,13 +54,35 @@ class MetadataTabMixin:
         setup_search_panel(self)
         setup_details_panel(self)
 
-        # "Update Book Metadata" button
+        # Buttons: "Update book metadata" + "Open in BookBrainz"
+        self.horizontalLayout_buttons_metadataTab = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_buttons_metadataTab.setObjectName(
+            "horizontalLayout_buttons_metadataTab"
+        )
+
         self.pushButton_update_metadataTab = QtWidgets.QPushButton(parent=self.page)
         self.pushButton_update_metadataTab.setMinimumSize(QtCore.QSize(0, 30))
+        self.pushButton_update_metadataTab.setEnabled(False)
         self.pushButton_update_metadataTab.setObjectName(
             "pushButton_update_metadataTab"
         )
-        self.verticalLayout_5.addWidget(self.pushButton_update_metadataTab)
+        self.horizontalLayout_buttons_metadataTab.addWidget(
+            self.pushButton_update_metadataTab
+        )
+
+        self.pushButton_openBookBrainz_metadataTab = QtWidgets.QPushButton(
+            parent=self.page
+        )
+        self.pushButton_openBookBrainz_metadataTab.setMinimumSize(QtCore.QSize(0, 30))
+        self.pushButton_openBookBrainz_metadataTab.setEnabled(False)
+        self.pushButton_openBookBrainz_metadataTab.setObjectName(
+            "pushButton_openBookBrainz_metadataTab"
+        )
+        self.horizontalLayout_buttons_metadataTab.addWidget(
+            self.pushButton_openBookBrainz_metadataTab
+        )
+
+        self.verticalLayout_5.addLayout(self.horizontalLayout_buttons_metadataTab)
 
         # wiring the outer stacked widget
         self.stackedWidget_entire_metadataTab.addWidget(self.page)
@@ -76,7 +98,10 @@ class MetadataTabMixin:
         retranslate_placeholder(self, _translate)
 
         self.pushButton_update_metadataTab.setText(
-            _translate("Dialog", "Update Book Metadata")
+            _translate("Dialog", "Update book metadata")
+        )
+        self.pushButton_openBookBrainz_metadataTab.setText(
+            _translate("Dialog", "Open in BookBrainz")
         )
         self.tabWidget.setTabText(
             self.tabWidget.indexOf(self.MetadataTab),
@@ -153,7 +178,6 @@ class MetadataTabMixin:
         self.cached_identifiers = None
 
         self.label_data_name_metadataTab.clear()
-        self.label_data_sortname_metadataTab.clear()
         self.label_data_author_metadataTab.clear()
         self.label_data_language_metadataTab.clear()
         self.label_data_publisher_metadataTab.clear()
@@ -166,6 +190,9 @@ class MetadataTabMixin:
         if selected_row == -1:
             selected_row = 0
         selected_bbid = self.tableWidget_metadataTab.item(selected_row, 3).text()
+        self.current_bbid = selected_bbid
+        self.pushButton_update_metadataTab.setEnabled(False)
+        self.pushButton_openBookBrainz_metadataTab.setEnabled(False)
 
         self.fetch_edition_data_thread = GetEditionDetailsByBBID(selected_bbid)
         self.fetch_edition_data_thread.error_occurred.connect(
@@ -188,18 +215,15 @@ class MetadataTabMixin:
 
     def on_fetch_edition_data_results_ready(self, results):
         self.stackedWidget_metadataDetails_metadataTab.setCurrentIndex(1)
+        self.pushButton_update_metadataTab.setEnabled(True)
+        self.pushButton_openBookBrainz_metadataTab.setEnabled(True)
         default_alias = results.get("defaultAlias") or {}
+        book_name = default_alias.get("name", "Unknown")
+        sort_name = default_alias.get("sortName") or ""
+        if sort_name and sort_name != book_name:
+            book_name = f"{book_name} ({sort_name})"
         self.label_data_name_metadataTab.setText(
-            self._elide_text(
-                self.label_data_name_metadataTab,
-                default_alias.get("name", "Unknown"),
-            )
-        )
-        self.label_data_sortname_metadataTab.setText(
-            self._elide_text(
-                self.label_data_sortname_metadataTab,
-                default_alias.get("sortName", "Unknown"),
-            )
+            self._elide_text(self.label_data_name_metadataTab, book_name)
         )
 
         author_credits = results.get("authorCredits") or {}
@@ -267,6 +291,15 @@ class MetadataTabMixin:
         QMessageBox.critical(
             self, "Error", f" failed to fetch edition data \n{error_msg}"
         )
+
+    def open_in_bookbrainz(self):
+        bbid = getattr(self, "current_bbid", None)
+        if not bbid:
+            QMessageBox.information(
+                self, "No Data", "Fetch metadata first to open a BookBrainz page"
+            )
+            return
+        QDesktopServices.openUrl(QUrl(f"https://bookbrainz.org/edition/{bbid}"))
 
     def on_fetch_identifiers_results_ready(self, data):
         identifiers = data.get("identifiers", [])

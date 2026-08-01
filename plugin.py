@@ -18,6 +18,9 @@ class BookBrainzPlugin(QtWidgets.QDialog, Ui_Dialog):
         # Wire up the action buttons
         self.pushButton_fetch_metadataTab.clicked.connect(self.fetch_metadata)
         self.pushButton_update_metadataTab.clicked.connect(self.update_metadata)
+        self.pushButton_openBookBrainz_metadataTab.clicked.connect(
+            self.open_in_bookbrainz
+        )
 
         self.tabWidget.setCurrentIndex(0)
         self.stackedWidget_metadataDetails_metadataTab.setCurrentIndex(0)
