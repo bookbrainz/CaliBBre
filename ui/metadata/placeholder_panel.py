@@ -71,10 +71,10 @@ def setup_no_book_placeholder(self):
 
 def retranslate_placeholder(self, _translate):
     self.label_noBookSelectedHeader_metadataTab.setText(
-        _translate("Dialog", "No Book Selected")
+        _translate("Dialog", "No book selected")
     )
     self.label_noBookSelected_description_metadataTab.setText(
         _translate(
-            "Dialog", "select a book from your Calibre library to use this feature "
+            "Dialog", "Select a book from your calibre library to use this feature"
         )
     )

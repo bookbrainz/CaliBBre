@@ -161,17 +161,17 @@ def setup_search_panel(self):
 
 def retranslate_search_panel(self, _translate):
     
-    for col, text in enumerate(["Name", "Authors", "Language", "BBID", "SortName"]):
+    for col, text in enumerate(["Name", "Authors", "Language", "BBID", "Sort name"]):
         item = self.tableWidget_metadataTab.horizontalHeaderItem(col)
         item.setText(_translate("Dialog", text))
 
-    self.label_searchResults_metadataTab.setText(_translate("Dialog", "Search Results"))
+    self.label_searchResults_metadataTab.setText(_translate("Dialog", "Search results"))
     self.pushButton_fetch_metadataTab.setText(
-        _translate("Dialog", "Fetch Book Metadata")
+        _translate("Dialog", "Fetch book metadata")
     )
     self.label_noMetadata_metadataTab_2.setText(
         _translate("Dialog", "No matching books found")
     )
     self.label_searchingMetadata_metadataTab.setText(
-        _translate("Dialog", "Searching Metadata...")
+        _translate("Dialog", "Searching metadata...")
     )
