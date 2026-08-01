@@ -42,7 +42,7 @@ def setup_details_panel(self):
     self.page_metadataDetails = QtWidgets.QWidget()
     self.page_metadataDetails.setObjectName("page_metadataDetails")
     self.verticalLayout_details = QtWidgets.QVBoxLayout(self.page_metadataDetails)
-    self.verticalLayout_details.setContentsMargins(15, 9, 15, 10)
+    self.verticalLayout_details.setContentsMargins(0, 10, 0, 10)
     self.verticalLayout_details.setSpacing(10)
 
     self.label_metadataDetails_metadataTab = QtWidgets.QLabel()
@@ -69,7 +69,6 @@ def setup_details_panel(self):
 
     fields = [
         ("label_name_metadataTab", "label_data_name_metadataTab"),
-        ("label_sortname_metadataTab", "label_data_sortname_metadataTab"),
         ("label_author_metadataTab", "label_data_author_metadataTab"),
         ("label_language_metadataTab", "label_data_language_metadataTab"),
         ("label_publisher_metadataTab", "label_data_publisher_metadataTab"),
@@ -178,14 +177,12 @@ def retranslate_details_panel(self, _translate):
         _translate("Dialog", "Select a book to view details")
     )
     self.label_metadataDetails_metadataTab.setText(
-        _translate("Dialog", "Metadata Details ")
+        _translate("Dialog", "Metadata details")
     )
 
     # Map each label/data pair to their display strings
     self.label_name_metadataTab.setText(_translate("Dialog", "Name:"))
     self.label_data_name_metadataTab.setText(_translate("Dialog", ""))
-    self.label_sortname_metadataTab.setText(_translate("Dialog", "Sort Name:"))
-    self.label_data_sortname_metadataTab.setText(_translate("Dialog", ""))
     self.label_author_metadataTab.setText(_translate("Dialog", "Author(s) :"))
     self.label_data_author_metadataTab.setText(_translate("Dialog", ""))
     self.label_language_metadataTab.setText(_translate("Dialog", "Language:"))

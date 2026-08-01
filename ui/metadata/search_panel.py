@@ -22,8 +22,8 @@ def setup_search_panel(self):
     self.page_searchResults = QtWidgets.QWidget()
     self.page_searchResults.setObjectName("page_searchResults")
     self.verticalLayout_searchResults = QtWidgets.QVBoxLayout(self.page_searchResults)
-    self.verticalLayout_searchResults.setContentsMargins(0, 10, 0, 0)
-    self.verticalLayout_searchResults.setSpacing(5)
+    self.verticalLayout_searchResults.setContentsMargins(0, 10, 0, 10)
+    self.verticalLayout_searchResults.setSpacing(10)
 
     self.label_searchResults_metadataTab = QtWidgets.QLabel(
         parent=self.page_searchResults
