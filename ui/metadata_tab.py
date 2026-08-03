@@ -2,6 +2,7 @@ from calibre.ebooks.metadata.book.base import Metadata
 from qt.core import QDesktopServices, QMessageBox, Qt, QtCore, QtGui, QTimer, QtWidgets, QUrl
 
 from ..dates import extended_date_to_datetime, format_extended_date
+from ..languages import format_languages
 
 from ..workers import (
     BookSearchWorker,
@@ -145,7 +146,7 @@ class MetadataTabMixin:
                 if not bbid:
                     continue
                 bookTitle = item.get("defaultAlias", {}).get("name", "Unknown")
-                bookLang = item.get("defaultAlias", {}).get("language", "eng")
+                bookLang = format_languages(item.get("languages"))
                 bookSortTitle = item.get("defaultAlias", {}).get("sortName", bookTitle)
 
                 row_position = self.tableWidget_metadataTab.rowCount()
@@ -236,9 +237,8 @@ class MetadataTabMixin:
             )
         )
 
-        languages = results.get("languages") or []
         self.label_data_language_metadataTab.setText(
-            ", ".join(languages) if languages else "Unknown"
+            format_languages(results.get("languages"))
         )
 
         publishers = results.get("publishers") or []
