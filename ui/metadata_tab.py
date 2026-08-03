@@ -1,7 +1,7 @@
-from datetime import datetime
-
 from calibre.ebooks.metadata.book.base import Metadata
 from qt.core import QDesktopServices, QMessageBox, Qt, QtCore, QtGui, QTimer, QtWidgets, QUrl
+
+from ..dates import extended_date_to_datetime, format_extended_date
 
 from ..workers import (
     BookSearchWorker,
@@ -112,7 +112,7 @@ class MetadataTabMixin:
         book_name = self.mi.title
         if not book_name:
             QMessageBox.warning(
-                self, "Input Error", "The book should have a valid Name"
+                self, "Input error", "The book should have a valid name"
             )
             return
 
@@ -168,7 +168,7 @@ class MetadataTabMixin:
         self.pushButton_fetch_metadataTab.setEnabled(False)
         self.pushButton_update_metadataTab.setEnabled(False)
         self.stackedWidget_noResults_metadataTab.setCurrentIndex(1)
-        self.label_noMetadata_metadataTab_2.setText("Network Error")
+        self.label_noMetadata_metadataTab_2.setText("Network error")
         QMessageBox.critical(self, "Error", f"An error occurred:\n{error_msg}")
 
     def fetch_metadata(self):
@@ -252,28 +252,9 @@ class MetadataTabMixin:
             )
         )
 
-        release_date = results.get("releaseEventDate") or ""
-        if release_date:
-            cleaned = release_date.lstrip("+00")[:10]
-            parsed = None
-            for fmt in ("%Y-%m-%d", "%Y-%m", "%Y"):
-                try:
-                    parsed = datetime.strptime(cleaned, fmt)
-                    break
-                except ValueError:
-                    pass
-            if parsed:
-                if fmt == "%Y-%m-%d":
-                    release_date = parsed.strftime("%B %d, %Y")
-                elif fmt == "%Y-%m":
-                    release_date = parsed.strftime("%B %Y")
-                else:
-                    release_date = str(parsed.year)
-            else:
-                release_date = release_date.lstrip("+")
-        else:
-            release_date = "Unknown"
-        self.label_data_releaseDate_metadataTab.setText(release_date)
+        self.label_data_releaseDate_metadataTab.setText(
+            format_extended_date(results.get("releaseEventDate"))
+        )
 
         disambiguation = results.get("disambiguation") or ""
         self.label_data_disambiguation_metadataTab.setText(
@@ -296,7 +277,7 @@ class MetadataTabMixin:
         bbid = getattr(self, "current_bbid", None)
         if not bbid:
             QMessageBox.information(
-                self, "No Data", "Fetch metadata first to open a BookBrainz page"
+                self, "No data", "Fetch metadata first to open a BookBrainz page"
             )
             return
         QDesktopServices.openUrl(QUrl(f"https://bookbrainz.org/edition/{bbid}"))
@@ -333,12 +314,12 @@ class MetadataTabMixin:
 
     def update_metadata(self):
         if not hasattr(self, "cached_metadata") or self.cached_metadata is None:
-            QMessageBox.warning(self, "No Data", "No metadata has been fetched yet")
+            QMessageBox.warning(self, "No data", "No metadata has been fetched yet")
             return
 
         selected_ids = self.gui.library_view.get_selected_ids()
         if not selected_ids:
-            QMessageBox.warning(self, "No Selection", "No book selected")
+            QMessageBox.warning(self, "No selection", "No book selected")
             return
 
         book_id = selected_ids[0]
@@ -373,7 +354,7 @@ class MetadataTabMixin:
                 authors.append(name)
 
         if not authors:
-            authors = ["Unknown Author"]
+            authors = ["Unknown author"]
 
         mi = Metadata(title, authors)
 
@@ -381,22 +362,8 @@ class MetadataTabMixin:
         if publishers:
             mi.publisher = publishers[0].get("name")
 
-        release_date = bb_data.get("releaseEventDate") or ""
-        if release_date:
-            cleaned = release_date.lstrip("+00")[:10]
-
-            formats_to_try = ("%Y-%m-%d", "%Y-%m", "%Y")
-
-            for fmt in formats_to_try:
-                try:
-                    mi.pubdate = datetime.strptime(cleaned, fmt)
-                    break
-                except ValueError:
-                    pass
-            else:
-                mi.pubdate = ""
-        else:
-            mi.pubdate = ""
+        pubdate = extended_date_to_datetime(bb_data.get("releaseEventDate"))
+        mi.pubdate = pubdate if pubdate is not None else ""
 
         languages = bb_data.get("languages") or []
         if languages:
