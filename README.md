@@ -4,7 +4,7 @@ A calibre plugin for Integration with the BookBrainz API
 ### Metadata Tab 
 Update metadata for a selected Calibre book.<br>
 
-<img width="783" height="431" alt="harry_potter" src="https://github.com/user-attachments/assets/c1e73632-8a97-4317-b952-2f7640ba12e8" /> <br>
+<img alt="harry_potter" src="./images/harry_potter.png" /> <br>
 
 The updated metadata of the book will contain:
 -  Name
@@ -32,5 +32,16 @@ git clone https://github.com/bookbrainz/CaliBBre
 calibre-customize -b /path/to/CaliBBre
 ```
 
+### Add the plugin to the toolbar
+
+<img alt="toolbar" src="./images/toolbar.png" /> <br>
+
+1. Go to `Preferences > Toolbars & menus`
+2. Select `The main toolbar` in the dropdown
+3. Find and select **BookBrainz Plugin** in the Available actions
+4. Click the right arrow (`->`) to add it to the toolbar
+5. Click `Apply` and `Close`
+
+The plugin can then be launched via the main toolbar
 
 
