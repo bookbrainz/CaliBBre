@@ -146,7 +146,7 @@ class MetadataTabMixin:
                 if not bbid:
                     continue
                 bookTitle = item.get("defaultAlias", {}).get("name", "Unknown")
-                bookLang = format_languages(item.get("languages"))
+                bookLang = format_languages([item.get("defaultAlias", {}).get("language", "Unknown")])
                 bookSortTitle = item.get("defaultAlias", {}).get("sortName", bookTitle)
 
                 row_position = self.tableWidget_metadataTab.rowCount()
