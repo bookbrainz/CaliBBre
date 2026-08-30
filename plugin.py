@@ -23,6 +23,9 @@ class BookBrainzPlugin(QtWidgets.QDialog, Ui_Dialog):
         self.pushButton_downloadMetadata_browseTab.clicked.connect(
             self.download_metadata
         )
+        self.pushButton_openBookBrainz_metadataTab.clicked.connect(
+            self.open_in_bookbrainz
+        )
 
         self.tabWidget.setCurrentIndex(0)
         self.stackedWidget_metadataDetails_metadataTab.setCurrentIndex(0)
